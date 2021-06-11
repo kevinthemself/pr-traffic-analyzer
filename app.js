@@ -33,7 +33,7 @@ const getPullRequestsByOrg = async function (organization) {
       return false;
     }
 
-    // generates all pr page urls to be processed later
+    // generates all pr page urls to be fetched later
     const generatePRUrls = async (repo) => {
       if (await shouldGetMoreResults(repo.full_name)) {
         let response = await github('head', `/repos/${repo.full_name}/pulls?${queryParams}`, { parse_response: false });
@@ -62,6 +62,7 @@ const getPullRequestsByOrg = async function (organization) {
       return unflattened.flat();
     }
 
+    // executes PR fetch for all repos based on their generated pr page result url
     const pullRequestsByRepo = await Promise.all(repoWithPageUrls.map(async ({ repo, urls }) => ({ repo, prs: await getAllResults(urls) })));
 
     if (pullRequestsByRepo.every(({ prs }) => prs.length === 0)) {
@@ -73,7 +74,7 @@ const getPullRequestsByOrg = async function (organization) {
     const mergedPullRequestCount = pullRequestsByRepo.reduce((count, { prs }) => count += prs.filter(pr => pr.state === 'closed' && pr.merge_commit_sha).length, 0);
     const closedNotMergedPullRequestCount = pullRequestsByRepo.reduce((count, { prs }) => count += prs.filter(pr => pr.state === 'closed' && !pr.merge_commit_sha).length, 0)
 
-    console.log(`Found ${openPullRequestCount} open pull requests, ${mergedPullRequestCount} merged pull requests, and ${closedNotMergedPullRequestCount} closed & unmerged pull requests out of ${totalPullRequestCount} in ${organization} across ${repos.length} repositories!`);
+    console.log(`Found ${openPullRequestCount} open pull requests, ${mergedPullRequestCount} merged pull requests, and ${closedNotMergedPullRequestCount} closed & unmerged pull requests out of ${totalPullRequestCount} total pull requests in ${organization} across ${repos.length} repositories!`);
 
     return pullRequestsByRepo;
   } catch (error) {
